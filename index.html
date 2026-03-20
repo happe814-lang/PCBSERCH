@@ -2585,28 +2585,31 @@
 "PC-0626-01-01": "I-0596_1H018"
     };
 
-   const palette = [
-        "#e3f2fd", "#f1f8e9", "#fff3e0", "#f3e5f5", "#e0f2f1", 
-        "#e8eaf6", "#eeeeee", "#fce4ec", "#f9fbe7", "#efebe9", 
-        "#e0f7fa", "#fff9c4", "#ffecb3", "#d1c4e9", "#c8e6c9", 
-        "#ffccbc", "#d7ccc8", "#cfd8dc", "#f8bbd0", "#b2ebf2"
-    ];
+   const palette = ["#e3f2fd", "#f1f8e9", "#fff3e0", "#f3e5f5", "#e0f2f1", "#e8eaf6", "#eeeeee", "#fce4ec", "#f9fbe7", "#efebe9"];
 
     let currentGroups = []; 
     let isCommonOnlyMode = false;
 
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
-    // 重新設計標準化邏輯：區分「純數字」與「帶字母後綴」
-    function advancedNormalize(str) {
-        // 移除 PC- 及橫線，保留數字與末端字母
-        let clean = str.replace(/^PC-/i, '').replace(/-/g, '').toUpperCase();
+    // 核心邏輯：將輸入的數字字串與編號的「核心區段」進行比對
+    function checkPositionalMatch(fullID, queryStr) {
+        const parts = fullID.split('-');
+        if (parts.length < 3) return false;
+
+        // 提取核心區段：第二區塊(0458)與第三區塊(02)
+        const coreID = (parts[1] + parts[2]).replace(/\D/g, ''); 
         
-        // 如果是純數字且長度為 4，執行自動補零校準 (例如 8401 -> 008401)
-        if (/^\d{4}$/.test(clean)) {
-            return "00" + clean;
+        // 處理輸入：移除所有非數字
+        let cleanQuery = queryStr.replace(/\D/g, '');
+
+        // 自動校準補零 (針對 45802 -> 045802)
+        if (cleanQuery.length === 5) {
+            cleanQuery = "0" + cleanQuery;
         }
-        return clean;
+
+        // 執行精確核心比對
+        return coreID === cleanQuery;
     }
 
     function getBaseID(fullID) {
@@ -2629,20 +2632,7 @@
         isCommonOnlyMode = false;
         
         const matchedIDs = Object.keys(rawData).filter(key => {
-            return keywords.some(kw => {
-                const target = advancedNormalize(key);
-                const query = advancedNormalize(kw);
-                
-                // 執行精確結尾匹配：如果搜尋 35A，目標結尾必須是 35A，不能是 35
-                // 如果搜尋 35，則透過「非字母結尾」的斷言來隔離 35A
-                if (/[A-Z]$/.test(query)) {
-                    return target.endsWith(query); 
-                } else {
-                    // 若搜尋純數字 35，利用正則確保 35 後面不接字母
-                    const regex = new RegExp(query + "(?![A-Z])");
-                    return regex.test(target);
-                }
-            });
+            return keywords.some(kw => checkPositionalMatch(key, kw));
         });
 
         const groups = {};
@@ -2685,9 +2675,8 @@
     function renderView(displayGroups) {
         const statusDiv = document.getElementById('matchStatus');
         const resultDiv = document.getElementById('resultArea');
-        
         if (currentGroups.length === 0) {
-            statusDiv.innerText = "查無此型號。";
+            statusDiv.innerText = "查無此核心編號。";
             resultDiv.innerHTML = "";
             return;
         }
