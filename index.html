@@ -105,18 +105,23 @@
 
     fetchCSV();
 
-    // 修正後的智慧比對邏輯：放寬自動補零條件並保留精確優先
+    // 重新設計的比對邏輯
     function checkSmartMatch(fullID, queryStr) {
+        // 標準化資料庫 ID (移除 PC 與橫線)
         const normalizedID = fullID.replace(/PC-/g, '').replace(/-/g, '').toUpperCase();
+        
+        // 標準化輸入字串：只要開頭不是 0，統一幫使用者補 0 以符合 PC-0XXX 格式
         let cleanQuery = queryStr.replace(/-/g, '').toUpperCase();
-
-        // 智慧補零：長度 5 或 6 且開頭不是 0 的情況下自動補 0
-        if (cleanQuery.length >= 5 && cleanQuery.length <= 6 && !cleanQuery.startsWith('0')) {
+        if (cleanQuery.length > 0 && !cleanQuery.startsWith('0')) {
             cleanQuery = "0" + cleanQuery;
         }
 
+        // 規則 1：精確匹配 (完全一樣就回傳 EXACT)
         if (normalizedID === cleanQuery) return "EXACT";
+        
+        // 規則 2：開頭匹配 (包含 4274 帶出 42742A 的情境)
         if (normalizedID.startsWith(cleanQuery)) return "FUZZY";
+
         return null;
     }
 
@@ -138,16 +143,21 @@
         if (keywords.length === 0) return;
         isCommonOnlyMode = false;
 
-        let matchedIDs = [];
-        let hasExactMatch = false;
-
         const results = Object.keys(rawData).map(key => {
-            const matchType = keywords.reduce((acc, kw) => acc || checkSmartMatch(key, kw), null);
-            if (matchType === "EXACT") hasExactMatch = true;
+            const matchType = keywords.reduce((acc, kw) => {
+                const type = checkSmartMatch(key, kw);
+                if (type === "EXACT") return "EXACT"; // 優先權最高
+                return acc || type;
+            }, null);
             return { key, matchType };
         }).filter(r => r.matchType !== null);
 
-        if (hasExactMatch) {
+        // 邏輯最佳化：如果輸入的關鍵字中有完全匹配的結果，則只顯示完全匹配項
+        // 但如果只是輸入部分編號（模糊搜尋），則顯示所有符合開頭的結果
+        let matchedIDs = [];
+        const hasExact = results.some(r => r.matchType === "EXACT");
+        
+        if (hasExact) {
             matchedIDs = results.filter(r => r.matchType === "EXACT").map(r => r.key);
         } else {
             matchedIDs = results.map(r => r.key);
@@ -190,10 +200,10 @@
 
     function renderView(displayGroups) {
         const statusDiv = document.getElementById('matchStatus');
-        const resultDiv = document.getElementById('resultArea');
+        const resultArea = document.getElementById('resultArea');
         if (currentGroups.length === 0) {
             statusDiv.innerText = "查無此核心編號。";
-            resultDiv.innerHTML = "";
+            resultArea.innerHTML = "";
             return;
         }
         let statusHtml = "母件：";
@@ -227,7 +237,7 @@
             }).filter(h => h !== '');
             if (codeHtmlList.length > 0) html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList.join('')}</td></tr>`;
         });
-        resultDiv.innerHTML = html + `</tbody></table>`;
+        resultArea.innerHTML = html + `</tbody></table>`;
     }
 
     function filterGroup(groupId) {
