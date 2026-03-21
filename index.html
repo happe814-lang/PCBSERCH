@@ -75,7 +75,18 @@
 <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCXT3zLzXbfrprksE92KR0EM6qXnteT_aGAjYFVIpRiwDV7Pg_BIFoIQMG8fpnTd6m8dCAYYBnuaxX/pub?output=csv";
     let rawData = {};
-    const palette = ["#e3f2fd", "#f1f8e9", "#fff3e0", "#f3e5f5", "#e0f2f1", "#e8eaf6", "#eeeeee", "#fce4ec", "#f9fbe7", "#efebe9"];
+    const palette = [
+    "#90caf9", // 01. 較深的淺藍
+    "#c5e1a5", // 02. 較深的淺綠
+    "#ffcc80", // 03. 較深的淺橘
+    "#e1bee7", // 04. 較深的淺紫
+    "#80cbc4", // 05. 較深的淺藍綠
+    "#c5cae9", // 06. 較深的淺靛藍
+    "#cfd8dc", // 07. 帶有科技感的藍灰
+    "#f48fb1", // 08. 較深的淺粉紅
+    "#e6ee9c", // 09. 較深的黃綠
+    "#bcaaa4"  // 10. 較深的褐灰
+];
     let currentGroups = []; 
     let isCommonOnlyMode = false;
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
