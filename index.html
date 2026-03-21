@@ -169,18 +169,53 @@
         
         const groups = {};
         matchedIDs.forEach(id => {
-            const base = getBaseID(id);
-            const content = rawData[id];
-            const groupKey = `${base}|${content}`;
+            // 1. 拆解料號來分析後綴
+            const parts = id.split('-');
+            let base = id;
+            let suffix = "";
+            let isPureEnglishSuffix = false;
+
+            if (parts.length > 3) {
+                base = parts.slice(0, 3).join('-'); // 取出前三段作為核心，例如 PC-0564-01A
+                suffix = parts.slice(3).join('-');  // 取出第四段以後作為後綴，例如 GO, XX, 或 01
+                
+                // 2. 判斷後綴是否「完全只有英文字母」 (排除任何數字或符號)
+                isPureEnglishSuffix = /^[A-Za-z]+$/.test(suffix);
+            }
+
+            const content = rawData[id] || "";
+            
+            // 3. 最佳化分組條件：
+            // 如果後綴全為英文（軟體差異），就用 base (核心編號) 合併在一起
+            // 如果後綴包含數字（硬體差異），就用原本完整的 id 獨立當作一個群組
+            const groupKey = isPureEnglishSuffix ? base : id; 
+            
             if (!groups[groupKey]) {
-                groups[groupKey] = { id: groupKey, base: base, displayName: "", members: [], content: content };
+                groups[groupKey] = { 
+                    id: groupKey, 
+                    base: base, 
+                    // 只有被合併的純英文後綴才會顯示為 -XX，獨立硬體則顯示原本的完整料號
+                    displayName: isPureEnglishSuffix ? `${base}-XX` : id, 
+                    members: [], 
+                    contentSet: new Set()      
+                };
             }
             groups[groupKey].members.push(id);
+            
+            // 4. 合併用料 (使用 Set 避免重複)
+            content.split(',').forEach(part => {
+                const cleanPart = part.trim();
+                if (cleanPart) {
+                    groups[groupKey].contentSet.add(cleanPart);
+                }
+            });
         });
+
+        // 將 Set 轉換回逗號分隔的字串，並分配顏色
         currentGroups = Object.values(groups).map((g, i) => ({
             ...g,
-            color: palette[i % palette.length],
-            displayName: g.members.length > 1 ? `${g.base}-XX` : g.members[0]
+            content: Array.from(g.contentSet).join(','), 
+            color: palette[i % palette.length]
         }));
         updateUI();
     }
