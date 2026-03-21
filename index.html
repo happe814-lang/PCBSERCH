@@ -21,13 +21,13 @@
         th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
 
-        /* 修改處：縮小類別欄位寬度 */
+        /* 最佳化：縮小類別欄位寬度並防止換行 */
         .prefix-td { 
             font-weight: bold; 
             color: #28a745; 
-            width: 1%;           /* 強制縮小到最小可能寬度 */
-            white-space: nowrap;  /* 防止文字換行 */
-            padding-right: 20px;  /* 保留一點點呼吸空間 */
+            width: 1%;           
+            white-space: nowrap;  
+            padding-right: 15px;  
         }
         
         .parent-tag { 
@@ -58,17 +58,16 @@
 <div class="container">
     <h2>BOM 查詢</h2>
     <p>輸入母件編號：</p>
-    <textarea id="inputSearch" placeholder="例如輸入 42242"></textarea>
-    <div class="hint">* 不用打PC、"-"、軟體，會自動比對 PC-00XX-XX 格式，排除非零開頭的誤標。</div>
-    <div class="hint">* 輸入04274會帶出PC-0427-4X所有的母件。</div>
-    <div class="hint">* 點擊母件會單獨列出用料。</div>
+    <textarea id="inputSearch" placeholder="例如輸入 42242A"></textarea>
+    <div class="hint">* 輸入 42242 會自動補零搜尋系列；輸入 42242A 會優先鎖定該版本。</div>
+    <div class="hint">* 支援格式：PC-板號(4碼)-加工階1-加工階2。</div>
 
     <div class="btn-group">
         <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋全部</button>
         <button class="filter-btn" id="btnOnlyCommon" onclick="toggleCommonOnly()" style="display:none;">僅顯示共用料</button>
     </div>
 
-    <div id="matchStatus" class="match-info">資料載入中...</div>
+    <div id="matchStatus" class="match-info">資料同步中...</div>
     <div id="resultArea"></div>
 </div>
 
@@ -80,10 +79,11 @@
     let isCommonOnlyMode = false;
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
+    // 從 Google 試算表讀取資料
     async function fetchCSV() {
         try {
             const response = await fetch(csvUrl + "&t=" + new Date().getTime());
-            if (!response.ok) throw new Error('網路回應不正常');
+            if (!response.ok) throw new Error('連線失敗');
             const data = await response.text();
             const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
             const newDb = {};
@@ -98,23 +98,33 @@
             });
 
             rawData = newDb;
-            document.getElementById('matchStatus').innerText = "資料同步完成。";
+            document.getElementById('matchStatus').innerText = "雲端資料已就緒。";
             document.getElementById('btnSearch').disabled = false;
         } catch (error) {
-            console.error("Error fetching CSV:", error);
-            document.getElementById('matchStatus').innerText = "載入失敗：Failed to fetch (請嘗試上傳至 GitHub Pages 測試)";
+            document.getElementById('matchStatus').innerText = "載入失敗：請上傳至 GitHub Pages 測試。";
         }
     }
 
     fetchCSV();
 
-    function checkPositionalMatch(fullID, queryStr) {
-        const parts = fullID.split('-');
-        if (parts.length < 3) return false;
-        const coreID = (parts[1] + parts[2]).replace(/\D/g, ''); 
-        let cleanQuery = queryStr.replace(/\D/g, '');
-        if (cleanQuery.length === 5) cleanQuery = "0" + cleanQuery;
-        return coreID === cleanQuery;
+    // 核心比對邏輯：包含自動補零與精確優先權
+    function checkSmartMatch(fullID, queryStr) {
+        // 標準化資料庫 ID (移除 PC 與橫線)
+        const normalizedID = fullID.replace(/PC-/g, '').replace(/-/g, '').toUpperCase();
+        
+        // 標準化輸入字串 (補零邏輯)
+        let cleanQuery = queryStr.replace(/-/g, '').toUpperCase();
+        if (cleanQuery.length === 5 && !isNaN(cleanQuery)) {
+            cleanQuery = "0" + cleanQuery;
+        }
+
+        // 規則 1：精確匹配 (如果輸入 42242A，就只抓 042242A)
+        if (normalizedID === cleanQuery) return "EXACT";
+        
+        // 規則 2：系列匹配 (如果輸入 04274，抓出所有 04274X)
+        if (normalizedID.startsWith(cleanQuery)) return "FUZZY";
+
+        return null;
     }
 
     function getBaseID(fullID) {
@@ -134,7 +144,24 @@
         const keywords = input.split(/[\s,]+/).filter(k => k !== "");
         if (keywords.length === 0) return;
         isCommonOnlyMode = false;
-        const matchedIDs = Object.keys(rawData).filter(key => keywords.some(kw => checkPositionalMatch(key, kw)));
+
+        let matchedIDs = [];
+        let hasExactMatch = false;
+
+        // 找出所有匹配項並標記是否有精確匹配
+        const results = Object.keys(rawData).map(key => {
+            const matchType = keywords.reduce((acc, kw) => acc || checkSmartMatch(key, kw), null);
+            if (matchType === "EXACT") hasExactMatch = true;
+            return { key, matchType };
+        }).filter(r => r.matchType !== null);
+
+        // 如果有精確匹配，則排除其他的模糊匹配
+        if (hasExactMatch) {
+            matchedIDs = results.filter(r => r.matchType === "EXACT").map(r => r.key);
+        } else {
+            matchedIDs = results.map(r => r.key);
+        }
+        
         const groups = {};
         matchedIDs.forEach(id => {
             const base = getBaseID(id);
@@ -174,7 +201,7 @@
         const statusDiv = document.getElementById('matchStatus');
         const resultDiv = document.getElementById('resultArea');
         if (currentGroups.length === 0) {
-            statusDiv.innerText = "查無此核心編號。";
+            statusDiv.innerText = "查無此母件編號。";
             resultDiv.innerHTML = "";
             return;
         }
@@ -197,6 +224,7 @@
                 masterMap[prefix][code].push(g);
             });
         });
+        
         let html = `<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>`;
         Object.keys(masterMap).sort().forEach(pre => {
             const codesObj = masterMap[pre];
