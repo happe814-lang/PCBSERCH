@@ -7,7 +7,13 @@
     <style>
         body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 25px; background: #f4f7f9; }
         .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 20px; }
+        
+        /* 標題與切換按鈕排版 */
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 0; }
+        .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; }
+        .switch-btn:hover { background: #138496; }
+
         textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
         .hint { color: #666; font-size: 13px; margin-top: 5px; }
         
@@ -46,67 +52,39 @@
         }
         .del-btn:hover { background: #d9534f; color: white; }
         
-        /* 增加 cursor: pointer 讓子件看起來可點擊 */
         .child-item { cursor: pointer; padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; }
         .common-part { background-color: #ffcccc; color: #d9534f; font-weight: bold; border: 1px solid #ffb3b3; } 
         
-        /* 新增：點擊後的灰底透明樣式 */
         .child-item.dimmed { background-color: #e0e0e0 !important; color: #888 !important; border-color: #ccc !important; opacity: 0.6; }
 
         .match-info { margin-top: 20px; font-weight: bold; color: #555; line-height: 2.5; }
         .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
 
-        /* ----- 手機版螢幕適應設定 (小於 600px 時觸發，改為往下顯示) ----- */
+        /* ----- 手機版螢幕適應設定 ----- */
         @media screen and (max-width: 600px) {
-            body { 
-                margin: 10px; 
-            }
-            .container { 
-                padding: 15px; 
-            }
-            .btn-group { 
-                flex-direction: column; 
-                gap: 8px;
-            }
-            button { 
-                width: 100%; 
-                padding: 12px 20px;
-            }
-            .parent-tag {
-                margin: 5px 2px;
-            }
+            body { margin: 10px; }
+            .container { padding: 15px; }
+            .header-row { flex-direction: column; align-items: stretch; gap: 15px; }
+            .header-row h2 { margin-bottom: 5px; }
+            .btn-group { flex-direction: column; gap: 8px; }
+            button { width: 100%; padding: 12px 20px; }
+            .parent-tag { margin: 5px 2px; }
             
-            /* 將表格強制轉為區塊，取消橫向排列，改為上下堆疊 */
-            table, thead, tbody, th, td, tr { 
-                display: block; 
-                width: 100%; 
-                box-sizing: border-box;
-            }
-            thead { 
-                display: none; /* 手機版隱藏表頭，節省空間 */
-            }
-            tr { 
-                margin-bottom: 15px; 
-                border: 1px solid #ccc; 
-                border-radius: 8px;
-                background-color: #fff;
-            }
-            td { 
-                border: none; 
-                padding: 10px; 
-            }
-            .prefix-td { 
-                border-bottom: 1px dashed #e0e0e0; 
-                padding-bottom: 8px; 
-                margin-bottom: 5px;
-            }
+            table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
+            thead { display: none; }
+            tr { margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; }
+            td { border: none; padding: 10px; }
+            .prefix-td { border-bottom: 1px dashed #e0e0e0; padding-bottom: 8px; margin-bottom: 5px; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>BOM 查詢</h2>
+<div class="container" id="viewBOM">
+    <div class="header-row">
+        <h2>BOM 查詢</h2>
+        <button class="switch-btn" onclick="toggleView('PRODUCT')">切換至成品查詢 →</button>
+    </div>
     <p>輸入母件編號：</p>
     <textarea id="inputSearch" placeholder="例如輸入 42242"></textarea>
     <div class="hint">* 不用打PC、"-"、軟體，會自動比對 PC-00XX-XX 格式，排除非零開頭的誤標。</div>
@@ -122,9 +100,27 @@
     <div id="resultArea"></div>
 </div>
 
+<div class="container" id="viewPRODUCT" style="display: none;">
+    <div class="header-row">
+        <h2>成品查詢</h2>
+        <button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>
+    </div>
+    <p>輸入母件編號：</p>
+    <textarea id="inputProductSearch" placeholder="例如輸入 KP48"></textarea>
+    <div class="hint">* 輸入母件編號，查詢該成品底下包含的子件與對應廠商。</div>
+
+    <div class="btn-group">
+        <button id="btnProductSearch" onclick="runProductQuery()" disabled>搜尋成品</button>
+    </div>
+
+    <div id="productMatchStatus" class="match-info">資料載入中...</div>
+    <div id="productResultArea"></div>
+</div>
+
 <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCXT3zLzXbfrprksE92KR0EM6qXnteT_aGAjYFVIpRiwDV7Pg_BIFoIQMG8fpnTd6m8dCAYYBnuaxX/pub?output=csv";
     let rawData = {};
+    let productData = {}; // 儲存 C, D, E 欄的資料
     const palette = [
     "#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", 
     "#c5cae9", "#cfd8dc", "#f48fb1", "#e6ee9c", "#bcaaa4"  
@@ -133,6 +129,17 @@
     let isCommonOnlyMode = false;
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
+    // 切換視圖功能
+    function toggleView(viewType) {
+        if (viewType === 'BOM') {
+            document.getElementById('viewBOM').style.display = 'block';
+            document.getElementById('viewPRODUCT').style.display = 'none';
+        } else {
+            document.getElementById('viewBOM').style.display = 'none';
+            document.getElementById('viewPRODUCT').style.display = 'block';
+        }
+    }
+
     async function fetchCSV() {
         try {
             const response = await fetch(csvUrl + "&t=" + new Date().getTime());
@@ -140,26 +147,51 @@
             const data = await response.text();
             const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
             const newDb = {};
+            const newProductDb = {};
             
             rows.forEach(row => {
                 const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
+                
+                // BOM 查詢資料庫 (A, B 欄)
                 if (cols.length >= 2) {
-                    const key = cols[0].replace(/"/g, '').trim();
-                    const val = cols[1].replace(/"/g, '').trim();
+                    const key = cols[0] ? cols[0].replace(/"/g, '').trim() : '';
+                    const val = cols[1] ? cols[1].replace(/"/g, '').trim() : '';
                     if (key) newDb[key] = val;
+                }
+
+                // 成品查詢資料庫 (C, D, E 欄位索引為 2, 3, 4)
+                if (cols.length >= 5) {
+                    const pKey = cols[2] ? cols[2].replace(/"/g, '').trim() : '';
+                    const pChild = cols[3] ? cols[3].replace(/"/g, '').trim() : '';
+                    const pVendor = cols[4] ? cols[4].replace(/"/g, '').trim() : '';
+                    
+                    if (pKey) {
+                        if (!newProductDb[pKey]) newProductDb[pKey] = [];
+                        if (pChild || pVendor) {
+                            newProductDb[pKey].push({ child: pChild, vendor: pVendor });
+                        }
+                    }
                 }
             });
 
             rawData = newDb;
+            productData = newProductDb;
+
             document.getElementById('matchStatus').innerText = "資料同步完成。";
+            document.getElementById('productMatchStatus').innerText = "資料同步完成。";
             document.getElementById('btnSearch').disabled = false;
+            document.getElementById('btnProductSearch').disabled = false;
         } catch (error) {
             document.getElementById('matchStatus').innerText = "載入失敗：Failed to fetch";
+            document.getElementById('productMatchStatus').innerText = "載入失敗：Failed to fetch";
         }
     }
 
     fetchCSV();
 
+    // ==========================================
+    // BOM 查詢原有邏輯 (完全不變動)
+    // ==========================================
     function checkSmartMatch(fullID, queryStr) {
         const normalizedID = fullID.replace(/PC-/g, '').replace(/-/g, '').toUpperCase();
         let cleanQuery = queryStr.replace(/-/g, '').toUpperCase();
@@ -171,11 +203,6 @@
         if (normalizedID === cleanQuery) return "EXACT";
         if (normalizedID.startsWith(cleanQuery)) return "FUZZY";
         return null;
-    }
-
-    function getBaseID(fullID) {
-        const parts = fullID.split('-');
-        return parts.length > 3 ? parts.slice(0, 3).join('-') : fullID;
     }
 
     function formatCode(codeStr) {
@@ -280,7 +307,7 @@
         const statusDiv = document.getElementById('matchStatus');
         const resultArea = document.getElementById('resultArea');
         if (currentGroups.length === 0) {
-            statusDiv.innerText = "查無母件。";
+            statusDiv.innerText = "查無此核心編號。";
             resultArea.innerHTML = "";
             return;
         }
@@ -311,7 +338,6 @@
             let codeHtmlList = sortedCodes.map(c => {
                 const owners = codesObj[c];
                 const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length;
-                // 加入 onclick 事件切換 dimmed 樣式
                 return isCommon ? `<span class="child-item common-part" onclick="this.classList.toggle('dimmed')">${c}</span>` : (!isCommonOnlyMode ? `<span class="child-item" style="background-color: ${owners[0].color}" onclick="this.classList.toggle('dimmed')">${c}</span>` : '');
             }).filter(h => h !== '');
             if (codeHtmlList.length > 0) html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList.join('')}</td></tr>`;
@@ -323,6 +349,55 @@
         isCommonOnlyMode = false;
         const target = currentGroups.find(g => g.id === groupId);
         if (target) renderView([target]);
+    }
+
+    // ==========================================
+    // 新增：成品查詢邏輯
+    // ==========================================
+    function runProductQuery() {
+        const input = document.getElementById('inputProductSearch').value.trim().toUpperCase();
+        const resultArea = document.getElementById('productResultArea');
+        const statusDiv = document.getElementById('productMatchStatus');
+        
+        if (!input) {
+            return;
+        }
+
+        // 進行模糊比對找出符合的成品母件
+        const matchedKeys = Object.keys(productData).filter(key => key.toUpperCase().includes(input));
+
+        if (matchedKeys.length === 0) {
+            statusDiv.innerText = "查無此成品編號。";
+            resultArea.innerHTML = "";
+            return;
+        }
+
+        let statusHtml = "成品母件：";
+        matchedKeys.forEach(key => {
+            statusHtml += `<span class="parent-tag" style="background-color: #cfd8dc; cursor: default;">${key}</span>`;
+        });
+        statusDiv.innerHTML = statusHtml;
+
+        // 產生垂直列表與廠商表格
+        let html = `<table><thead><tr><th style="width: 1%">成品母件</th><th>子件清單與廠商</th></tr></thead><tbody>`;
+        
+        matchedKeys.forEach(key => {
+            const items = productData[key];
+            
+            // 將此母件底下的子件排列為直排清單，並在右側顯示廠商
+            let listHtml = items.map(item => {
+                return `
+                    <div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px dashed #eee;">
+                        <div style="flex: 1;"><span class="child-item" style="background-color: #f8f9fa;" onclick="this.classList.toggle('dimmed')">${item.child}</span></div>
+                        <div style="flex: 1; color: #555; font-weight: 500;">${item.vendor}</div>
+                    </div>`;
+            }).join('');
+
+            html += `<tr><td class="prefix-td" style="vertical-align: top;">${key}</td><td>${listHtml}</td></tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        resultArea.innerHTML = html;
     }
 </script>
 </body>
