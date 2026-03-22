@@ -11,18 +11,23 @@
         /* 標題與切換按鈕排版 */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 0; }
-        .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; }
+        .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; color: white; border: none; cursor: pointer; }
         .switch-btn:hover { background: #138496; }
 
         textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
         .hint { color: #666; font-size: 13px; margin-top: 5px; }
         
-        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
         button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 15px; }
         button:hover { background: #218838; }
         button:disabled { background: #ccc; cursor: not-allowed; }
+        
         .filter-btn { background: #f39c12; }
         .filter-btn:hover { background: #e67e22; }
+        
+        /* 新增：清空按鈕的專屬樣式（灰色） */
+        .clear-btn { background: #6c757d; }
+        .clear-btn:hover { background: #5a6268; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 25px; }
         th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
@@ -93,6 +98,7 @@
 
     <div class="btn-group">
         <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋全部</button>
+        <button class="clear-btn" onclick="clearBOMSearch()">清空搜尋</button>
         <button class="filter-btn" id="btnOnlyCommon" onclick="toggleCommonOnly()" style="display:none;">僅顯示共用料</button>
     </div>
 
@@ -111,6 +117,7 @@
 
     <div class="btn-group">
         <button id="btnProductSearch" onclick="runProductQuery()" disabled>搜尋成品</button>
+        <button class="clear-btn" onclick="clearProductSearch()">清空搜尋</button>
     </div>
 
     <div id="productMatchStatus" class="match-info">資料載入中...</div>
@@ -190,7 +197,25 @@
     fetchCSV();
 
     // ==========================================
-    // BOM 查詢原有邏輯 (完全不變動)
+    // 清空搜尋功能
+    // ==========================================
+    function clearBOMSearch() {
+        document.getElementById('inputSearch').value = '';
+        document.getElementById('resultArea').innerHTML = '';
+        document.getElementById('matchStatus').innerText = '';
+        currentGroups = [];
+        isCommonOnlyMode = false;
+        document.getElementById('btnOnlyCommon').style.display = 'none';
+    }
+
+    function clearProductSearch() {
+        document.getElementById('inputProductSearch').value = '';
+        document.getElementById('productResultArea').innerHTML = '';
+        document.getElementById('productMatchStatus').innerText = '';
+    }
+
+    // ==========================================
+    // BOM 查詢原有邏輯
     // ==========================================
     function checkSmartMatch(fullID, queryStr) {
         const normalizedID = fullID.replace(/PC-/g, '').replace(/-/g, '').toUpperCase();
@@ -352,7 +377,7 @@
     }
 
     // ==========================================
-    // 新增：成品查詢邏輯
+    // 成品查詢邏輯
     // ==========================================
     function runProductQuery() {
         const input = document.getElementById('inputProductSearch').value.trim().toUpperCase();
