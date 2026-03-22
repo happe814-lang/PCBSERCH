@@ -46,9 +46,13 @@
         }
         .del-btn:hover { background: #d9534f; color: white; }
         
-        .child-item { padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); }
+        /* 增加 cursor: pointer 讓子件看起來可點擊 */
+        .child-item { cursor: pointer; padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; }
         .common-part { background-color: #ffcccc; color: #d9534f; font-weight: bold; border: 1px solid #ffb3b3; } 
         
+        /* 新增：點擊後的灰底透明樣式 */
+        .child-item.dimmed { background-color: #e0e0e0 !important; color: #888 !important; border-color: #ccc !important; opacity: 0.6; }
+
         .match-info { margin-top: 20px; font-weight: bold; color: #555; line-height: 2.5; }
         .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
 
@@ -276,7 +280,7 @@
         const statusDiv = document.getElementById('matchStatus');
         const resultArea = document.getElementById('resultArea');
         if (currentGroups.length === 0) {
-            statusDiv.innerText = "查無此核心編號。";
+            statusDiv.innerText = "查無母件。";
             resultArea.innerHTML = "";
             return;
         }
@@ -307,7 +311,8 @@
             let codeHtmlList = sortedCodes.map(c => {
                 const owners = codesObj[c];
                 const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length;
-                return isCommon ? `<span class="child-item common-part">${c}</span>` : (!isCommonOnlyMode ? `<span class="child-item" style="background-color: ${owners[0].color}">${c}</span>` : '');
+                // 加入 onclick 事件切換 dimmed 樣式
+                return isCommon ? `<span class="child-item common-part" onclick="this.classList.toggle('dimmed')">${c}</span>` : (!isCommonOnlyMode ? `<span class="child-item" style="background-color: ${owners[0].color}" onclick="this.classList.toggle('dimmed')">${c}</span>` : '');
             }).filter(h => h !== '');
             if (codeHtmlList.length > 0) html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList.join('')}</td></tr>`;
         });
