@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PCB用料查詢工具</title>
     <style>
         body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 25px; background: #f4f7f9; }
@@ -21,7 +22,6 @@
         th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
 
-        /* 類別欄位寬度最佳化 */
         .prefix-td { 
             font-weight: bold; 
             color: #28a745; 
@@ -51,6 +51,52 @@
         
         .match-info { margin-top: 20px; font-weight: bold; color: #555; line-height: 2.5; }
         .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
+
+        /* ----- 手機版螢幕適應設定 (小於 600px 時觸發，改為往下顯示) ----- */
+        @media screen and (max-width: 600px) {
+            body { 
+                margin: 10px; 
+            }
+            .container { 
+                padding: 15px; 
+            }
+            .btn-group { 
+                flex-direction: column; 
+                gap: 8px;
+            }
+            button { 
+                width: 100%; 
+                padding: 12px 20px;
+            }
+            .parent-tag {
+                margin: 5px 2px;
+            }
+            
+            /* 將表格強制轉為區塊，取消橫向排列，改為上下堆疊 */
+            table, thead, tbody, th, td, tr { 
+                display: block; 
+                width: 100%; 
+                box-sizing: border-box;
+            }
+            thead { 
+                display: none; /* 手機版隱藏表頭，節省空間 */
+            }
+            tr { 
+                margin-bottom: 15px; 
+                border: 1px solid #ccc; 
+                border-radius: 8px;
+                background-color: #fff;
+            }
+            td { 
+                border: none; 
+                padding: 10px; 
+            }
+            .prefix-td { 
+                border-bottom: 1px dashed #e0e0e0; 
+                padding-bottom: 8px; 
+                margin-bottom: 5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -76,17 +122,9 @@
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCXT3zLzXbfrprksE92KR0EM6qXnteT_aGAjYFVIpRiwDV7Pg_BIFoIQMG8fpnTd6m8dCAYYBnuaxX/pub?output=csv";
     let rawData = {};
     const palette = [
-    "#90caf9", // 01. 較深的淺藍
-    "#c5e1a5", // 02. 較深的淺綠
-    "#ffcc80", // 03. 較深的淺橘
-    "#e1bee7", // 04. 較深的淺紫
-    "#80cbc4", // 05. 較深的淺藍綠
-    "#c5cae9", // 06. 較深的淺靛藍
-    "#cfd8dc", // 07. 帶有科技感的藍灰
-    "#f48fb1", // 08. 較深的淺粉紅
-    "#e6ee9c", // 09. 較深的黃綠
-    "#bcaaa4"  // 10. 較深的褐灰
-];
+    "#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", 
+    "#c5cae9", "#cfd8dc", "#f48fb1", "#e6ee9c", "#bcaaa4"  
+    ];
     let currentGroups = []; 
     let isCommonOnlyMode = false;
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
@@ -118,12 +156,10 @@
 
     fetchCSV();
 
-    // 最佳化比對邏輯
     function checkSmartMatch(fullID, queryStr) {
         const normalizedID = fullID.replace(/PC-/g, '').replace(/-/g, '').toUpperCase();
         let cleanQuery = queryStr.replace(/-/g, '').toUpperCase();
         
-        // 自動補 0 處理
         if (cleanQuery.length > 0 && !cleanQuery.startsWith('0')) {
             cleanQuery = "0" + cleanQuery;
         }
@@ -164,14 +200,12 @@
         let matchedIDs = [];
         const hasExact = results.some(r => r.matchType === "EXACT");
         
-        // 判斷是否為「系列搜尋」：如果找到的母件編號長度 > 輸入的補零後長度，代表是系列搜尋
         const isSeriesSearch = results.some(r => {
             let cleanKw = keywords[0].replace(/-/g, '').toUpperCase();
             if (!cleanKw.startsWith('0')) cleanKw = "0" + cleanKw;
             return r.key.replace(/PC-/g, '').replace(/-/g, '').length > cleanKw.length;
         });
 
-        // 只有在「確實完全匹配」且「不是系列搜尋」時才進行過濾
         if (hasExact && !isSeriesSearch) {
             matchedIDs = results.filter(r => r.matchType === "EXACT").map(r => r.key);
         } else {
@@ -180,32 +214,24 @@
         
         const groups = {};
         matchedIDs.forEach(id => {
-            // 1. 拆解料號來分析後綴
             const parts = id.split('-');
             let base = id;
             let suffix = "";
             let isPureEnglishSuffix = false;
 
             if (parts.length > 3) {
-                base = parts.slice(0, 3).join('-'); // 取出前三段作為核心，例如 PC-0564-01A
-                suffix = parts.slice(3).join('-');  // 取出第四段以後作為後綴，例如 GO, XX, 或 01
-                
-                // 2. 判斷後綴是否「完全只有英文字母」 (排除任何數字或符號)
+                base = parts.slice(0, 3).join('-'); 
+                suffix = parts.slice(3).join('-');  
                 isPureEnglishSuffix = /^[A-Za-z]+$/.test(suffix);
             }
 
             const content = rawData[id] || "";
-            
-            // 3. 最佳化分組條件：
-            // 如果後綴全為英文（軟體差異），就用 base (核心編號) 合併在一起
-            // 如果後綴包含數字（硬體差異），就用原本完整的 id 獨立當作一個群組
             const groupKey = isPureEnglishSuffix ? base : id; 
             
             if (!groups[groupKey]) {
                 groups[groupKey] = { 
                     id: groupKey, 
                     base: base, 
-                    // 只有被合併的純英文後綴才會顯示為 -XX，獨立硬體則顯示原本的完整料號
                     displayName: isPureEnglishSuffix ? `${base}-XX` : id, 
                     members: [], 
                     contentSet: new Set()      
@@ -213,7 +239,6 @@
             }
             groups[groupKey].members.push(id);
             
-            // 4. 合併用料 (使用 Set 避免重複)
             content.split(',').forEach(part => {
                 const cleanPart = part.trim();
                 if (cleanPart) {
@@ -222,7 +247,6 @@
             });
         });
 
-        // 將 Set 轉換回逗號分隔的字串，並分配顏色
         currentGroups = Object.values(groups).map((g, i) => ({
             ...g,
             content: Array.from(g.contentSet).join(','), 
