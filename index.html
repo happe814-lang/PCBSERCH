@@ -253,7 +253,7 @@
                 subDiv.style.borderRadius = '0 4px 4px 0';
                 subDiv.style.fontSize = '13px';
                 
-                let subHtml = `<div style="color: #555; margin-bottom: 5px; font-weight: bold;">↳ <span style="color: #17a2b8;">${childId}</span> 的次級子件：</div>`;
+                let subHtml = `<div style="color: #555; margin-bottom: 5px; font-weight: bold;">↳ <span style="color: #17a2b8;">${childId}</span> 的子件：</div>`;
                 subItems.forEach(sub => {
                     subHtml += `<span class="child-item" style="background-color: #fff; border-color: #b8daff; cursor: default;">${sub}</span> `;
                 });
@@ -382,7 +382,7 @@
         const statusDiv = document.getElementById('matchStatus');
         const resultArea = document.getElementById('resultArea');
         if (currentGroups.length === 0) {
-            statusDiv.innerText = "查無此核心編號。";
+            statusDiv.innerText = "查無此PCB編號。";
             resultArea.innerHTML = "";
             return;
         }
@@ -488,13 +488,13 @@
             group.commonName = generateCommonName(group.keys);
         });
 
-        let statusHtml = "成品母件：";
+        let statusHtml = "母件：";
         Object.values(groups).forEach(group => {
             statusHtml += `<span class="parent-tag" style="background-color: #cfd8dc; cursor: default;" title="${group.keys.join('\n')}">${group.commonName}</span>`;
         });
         statusDiv.innerHTML = statusHtml;
 
-        let html = `<table><thead><tr><th style="width: 15%; white-space: nowrap;">成品母件</th><th>子件清單與廠商</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th style="width: 15%; white-space: nowrap;">母件</th><th>子件與廠商</th></tr></thead><tbody>`;
         
         Object.values(groups).forEach(group => {
             // 加入專屬 class，並移除會強制換行的 inline style
