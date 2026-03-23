@@ -30,10 +30,11 @@
 
         .fixed-btn { background: #8e44ad; }
         .fixed-btn:hover { background: #732d91; }
-        .fixed-badge {
-            font-size: 10px; color: #fff; background-color: #8e44ad;
-            padding: 1px 5px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
-            font-weight: normal;
+        
+        /* 改善：將固定料的標記改為紫色加粗外框 */
+        .fixed-item {
+            border: 2px solid #8e44ad !important;
+            box-sizing: border-box;
         }
         
         table { width: 100%; border-collapse: collapse; margin-top: 25px; }
@@ -483,11 +484,13 @@
                 if (fixedFilterMode === 2 && isFixed) return '';
 
                 const tooltipText = "使用的母件：\n" + owners.map(o => o.displayName).join('\n');
-                const fixedBadgeHtml = isFixed ? `<span class="fixed-badge">固</span>` : '';
+                
+                // 依據是否為固定料加入對應的 class
+                const fixedClass = isFixed ? " fixed-item" : "";
 
                 if (isCommon) {
                     if (filterMode === 2) return '';
-                    return `<span class="child-item common-part" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}${fixedBadgeHtml}</span>`;
+                    return `<span class="child-item common-part${fixedClass}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
                 } else {
                     if (filterMode === 1) return '';
 
@@ -502,7 +505,7 @@
                         }).join(', ');
                         bgStyle = `background: linear-gradient(to right, ${stops}); color: #333; border: 1px solid #999;`;
                     }
-                    return `<span class="child-item" style="${bgStyle}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}${fixedBadgeHtml}</span>`;
+                    return `<span class="child-item${fixedClass}" style="${bgStyle}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
                 }
                 return '';
             }).filter(h => h !== '');
@@ -547,9 +550,6 @@
         return resultParts.join('-');
     }
 
-    // ==========================================
-    // 精煉版成品查詢邏輯 (有前無後，階層式降級搜尋)
-    // ==========================================
     function runProductQuery() {
         const rawInput = document.getElementById('inputProductSearch').value.trim();
         const resultArea = document.getElementById('productResultArea');
@@ -562,13 +562,11 @@
         const cleanInput = rawInput.replace(/[-\s_]/g, '').toUpperCase();
         const inputWithoutK = (cleanInput.startsWith('K') && cleanInput.length > 1) ? cleanInput.substring(1) : null;
 
-        // 第一階段：嚴格比對輸入的完整字串 (包含或被包含)
         let matchedKeys = Object.keys(productData).filter(key => {
             const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase();
             return cleanKey.includes(cleanInput) || cleanInput.startsWith(cleanKey);
         });
 
-        // 第二階段 (有前無後)：只有在第一階段「完全找不到」時，才啟動 K 代碼寬容尋找
         if (matchedKeys.length === 0 && inputWithoutK) {
             matchedKeys = Object.keys(productData).filter(key => {
                 const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase();
