@@ -13,6 +13,10 @@
         h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 0; }
         .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; color: white; border: none; cursor: pointer; }
         .switch-btn:hover { background: #138496; }
+        
+        /* 排程按鈕專屬顏色 (橘色) */
+        .switch-schedule-btn { background: #e67e22; }
+        .switch-schedule-btn:hover { background: #d35400; }
 
         textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
         .hint { color: #666; font-size: 13px; margin-top: 5px; }
@@ -31,7 +35,7 @@
         .fixed-btn { background: #8e44ad; }
         .fixed-btn:hover { background: #732d91; }
         
-        /* 固定料外框加粗設定為 4px */
+        /* 固定料外框加粗 4px */
         .fixed-item {
             border: 4px solid #8e44ad !important;
             box-sizing: border-box;
@@ -79,13 +83,8 @@
 
         .match-info { margin-top: 20px; font-weight: bold; color: #555; line-height: 2.5; }
         
-        /* 數量統計文字樣式 */
         .count-info {
-            font-weight: bold;
-            color: #e67e22;
-            margin-top: 5px;
-            margin-bottom: 5px;
-            font-size: 15px;
+            font-weight: bold; color: #e67e22; margin-top: 5px; margin-bottom: 5px; font-size: 15px;
         }
 
         .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
@@ -107,6 +106,16 @@
         }
         .modal-close:hover { color: #333; }
 
+        /* ===== 排程表佈局 (電腦版預設為類似表格) ===== */
+        .schedule-list { display: flex; flex-direction: column; margin-top: 15px; }
+        .sl-group { display: flex; border: 1px solid #e0e0e0; border-top: none; }
+        .sl-group:first-of-type { border-top: 1px solid #e0e0e0; }
+        .sl-date { flex: 1; padding: 12px; font-weight: bold; border-right: 1px solid #e0e0e0; display: flex; align-items: center; }
+        .sl-items { flex: 3; display: flex; flex-direction: column; }
+        .sl-row { display: flex; padding: 12px; border-bottom: 1px dashed #eee; }
+        .sl-row:last-child { border-bottom: none; }
+        .sl-cell { flex: 1; }
+
         /* ----- 手機版螢幕適應設定 ----- */
         @media screen and (max-width: 600px) {
             body { margin: 10px; }
@@ -114,31 +123,71 @@
             .header-row { flex-direction: column; align-items: stretch; gap: 15px; }
             .header-row h2 { margin-bottom: 5px; }
             
-            /* 調整手機版按鈕堆疊 */
             .header-buttons { display: flex; flex-direction: column; gap: 8px; width: 100%; }
             .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; }
 
             .btn-group { flex-direction: column; gap: 8px; }
             button { width: 100%; padding: 12px 20px; }
             
-            .parent-tag { 
-                margin: 3px 2px; 
-                padding: 2px 24px 2px 8px; 
-                font-size: 13px; 
-            }
-            
-            .del-btn {
-                width: 16px; height: 16px; line-height: 14px; font-size: 12px; right: 4px;
-            }
+            .parent-tag { margin: 3px 2px; padding: 2px 24px 2px 8px; font-size: 13px; }
+            .del-btn { width: 16px; height: 16px; line-height: 14px; font-size: 12px; right: 4px; }
             
             table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
             thead { display: none; }
             tr { margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; }
             td { border: none; padding: 10px; }
             .prefix-td { border-bottom: 1px dashed #e0e0e0; padding-bottom: 8px; margin-bottom: 5px; }
-            
-            .product-parent-title {
-                font-size: clamp(10px, 4vw, 16px);
+            .product-parent-title { font-size: clamp(10px, 4vw, 16px); }
+
+            /* 手機版排程表專屬樣式 (大框、左上角日期、同行雙外框) */
+            .desktop-only { display: none !important; }
+            .schedule-list { margin-top: 10px; }
+            .sl-group { 
+                display: block; 
+                border: 2px solid #aab7c4 !important; /* 大外框 */
+                border-radius: 8px; 
+                margin-bottom: 18px; 
+                position: relative; 
+                padding: 40px 10px 12px 10px; /* 頂部留空間給絕對定位的日期 */
+                background: #fff;
+            }
+            .sl-date { 
+                position: absolute; 
+                top: 0; left: 0; /* 日期只顯示一個且在左上角 */
+                background: #e67e22; 
+                color: #fff; 
+                padding: 5px 12px; 
+                border-radius: 6px 0 8px 0; 
+                font-size: 14px; 
+                border: none;
+                width: auto;
+            }
+            .sl-items { display: block; }
+            .sl-row { 
+                display: flex; 
+                gap: 10px; /* 製令與型號同一行並保持間距 */
+                padding: 0; 
+                margin-bottom: 10px; 
+                border: none;
+            }
+            .sl-row:last-child { margin-bottom: 0; }
+            .sl-cell { 
+                flex: 1; 
+                border: 1px solid #ced4da; /* 各自加上外框 */
+                border-radius: 6px; 
+                padding: 10px 5px; 
+                text-align: center; 
+                background: #f8f9fa;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden; 
+            }
+            .sl-cell .clickable-link {
+                font-size: clamp(11px, 3.5vw, 15px); /* 過長縮小字體 */
+                word-break: break-all;
+                display: block;
+                width: 100%;
             }
         }
     </style>
@@ -150,13 +199,13 @@
     <div class="header-row">
         <h2>BOM 查詢</h2>
         <div class="header-buttons" style="text-align: right;">
-            <button class="switch-btn" style="margin-bottom: 8px; display: inline-block;" onclick="toggleView('SCHEDULE')">切換至排程查詢 →</button><br>
+            <button class="switch-btn switch-schedule-btn" style="margin-bottom: 8px; display: inline-block;" onclick="toggleView('SCHEDULE')">切換至排程查詢 →</button><br>
             <button class="switch-btn" onclick="toggleView('PRODUCT')">切換至成品查詢 →</button>
         </div>
     </div>
     <p>輸入母件編號：</p>
-    <textarea id="inputSearch" placeholder="例如輸入 42242"></textarea>
-    <div class="hint">* 不用打PC、"-"、軟體，會自動比對 PC-00XX-XX 格式，排除非零開頭的誤標。</div>
+    <textarea id="inputSearch" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
+    <div class="hint">* 自動比對 PC-00XX-XX 格式，完整輸入或局部輸入皆可精準搜尋。</div>
     <div class="hint">* 輸入04274會帶出PC-0427-4X所有的母件。</div>
     <div class="hint">* 點擊母件會單獨列出用料。</div>
 
@@ -176,7 +225,7 @@
     <div class="header-row">
         <h2>成品查詢</h2>
         <div class="header-buttons" style="text-align: right;">
-            <button class="switch-btn" style="margin-bottom: 8px; display: inline-block;" onclick="toggleView('SCHEDULE')">切換至排程查詢 →</button><br>
+            <button class="switch-btn switch-schedule-btn" style="margin-bottom: 8px; display: inline-block;" onclick="toggleView('SCHEDULE')">切換至排程查詢 →</button><br>
             <button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>
         </div>
     </div>
@@ -220,7 +269,7 @@
     let productData = {}; 
     let subProductData = {}; 
     let fixedFeederParts = new Set(); 
-    let scheduleData = []; // 新增排程資料庫
+    let scheduleData = []; 
 
     const palette = [
     "#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", 
@@ -253,14 +302,12 @@
             rows.forEach(row => {
                 const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
                 
-                // BOM 查詢資料
                 if (cols.length >= 2) {
                     const key = cols[0] ? cols[0].replace(/"/g, '').trim() : '';
                     const val = cols[1] ? cols[1].replace(/"/g, '').trim() : '';
                     if (key) newDb[key] = val;
                 }
 
-                // 成品查詢資料
                 if (cols.length >= 5) {
                     const pKey = cols[2] ? cols[2].replace(/"/g, '').trim() : '';
                     const pChild = cols[3] ? cols[3].replace(/"/g, '').trim() : '';
@@ -274,7 +321,6 @@
                     }
                 }
 
-                // 次級子件展開資料
                 if (cols.length >= 7) {
                     const subParent = cols[5] ? cols[5].replace(/"/g, '').trim() : '';
                     const subChild = cols[6] ? cols[6].replace(/"/g, '').trim() : '';
@@ -287,7 +333,6 @@
                     }
                 }
 
-                // 固定料清單
                 if (cols.length >= 8) {
                     const feederPart = cols[7] ? cols[7].replace(/"/g, '').trim() : '';
                     if (feederPart) {
@@ -295,7 +340,6 @@
                     }
                 }
 
-                // 抓取 I(8), J(9), K(10) 欄 (製令單號、產品型號、上線日)
                 if (cols.length >= 11) {
                     const orderNo = cols[8] ? cols[8].replace(/"/g, '').trim() : '';
                     const prodModel = cols[9] ? cols[9].replace(/"/g, '').trim() : '';
@@ -317,7 +361,6 @@
             document.getElementById('btnSearch').disabled = false;
             document.getElementById('btnProductSearch').disabled = false;
             
-            // 資料載入完成後，直接繪製排程表
             renderSchedule();
         } catch (error) {
             document.getElementById('matchStatus').innerText = "載入失敗：Failed to fetch";
@@ -380,15 +423,17 @@
     }
 
     function checkSmartMatch(fullID, queryStr) {
-        const normalizedID = fullID.replace(/PC-/g, '').replace(/-/g, '').toUpperCase();
-        let cleanQuery = queryStr.replace(/-/g, '').toUpperCase();
+        const normalizedID = fullID.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
+        let cleanQuery = queryStr.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
         
-        if (cleanQuery.length > 0 && !cleanQuery.startsWith('0')) {
+        // 確保只有開頭是 1-9 的數字時才補 0，避免破壞純英文或完整料號
+        if (cleanQuery.length > 0 && /^[1-9]/.test(cleanQuery)) {
             cleanQuery = "0" + cleanQuery;
         }
 
         if (normalizedID === cleanQuery) return "EXACT";
         if (normalizedID.startsWith(cleanQuery)) return "FUZZY";
+        if (normalizedID.includes(cleanQuery)) return "FUZZY"; // 支援局部包含
         return null;
     }
 
@@ -423,9 +468,11 @@
         const hasExact = results.some(r => r.matchType === "EXACT");
         
         const isSeriesSearch = results.some(r => {
-            let cleanKw = keywords[0].replace(/-/g, '').toUpperCase();
-            if (!cleanKw.startsWith('0')) cleanKw = "0" + cleanKw;
-            return r.key.replace(/PC-/g, '').replace(/-/g, '').length > cleanKw.length;
+            let cleanKw = keywords[0].replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
+            if (/^[1-9]/.test(cleanKw)) cleanKw = "0" + cleanKw;
+            
+            const normKey = r.key.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
+            return normKey.length > cleanKw.length;
         });
 
         if (hasExact && !isSeriesSearch) {
@@ -714,30 +761,48 @@
     }
 
     // ==========================================
-    // 排程系統與條碼互動邏輯
+    // 排程系統與條碼互動邏輯 (群組化渲染)
     // ==========================================
     function renderSchedule() {
         const resultArea = document.getElementById('scheduleResultArea');
-        if (scheduleData.length <= 1) { // 略過可能只有標題的狀況
+        if (scheduleData.length <= 1) { 
             resultArea.innerHTML = "<div class='match-info'>尚無排程資料。</div>";
             return;
         }
         
-        let html = `<table><thead><tr><th style="width: 25%;">上線日</th><th style="width: 35%;">製令單號</th><th>產品型號</th></tr></thead><tbody>`;
-        // 略過第一行標題列
         const dataToRender = scheduleData.slice(1); 
         
+        // 依上線日進行群組化
+        const groupedData = {};
         dataToRender.forEach(item => {
-            // 略過完全空白的列
             if(!item.orderNo && !item.prodModel && !item.onlineDate) return; 
-            
-            html += `<tr>
-                <td>${item.onlineDate}</td>
-                <td><span class="clickable-link" onclick="showBarcode('${item.orderNo}')" title="點擊顯示條碼">${item.orderNo}</span></td>
-                <td><span class="clickable-link" onclick="jumpToBOM('${item.prodModel}')" title="點擊查詢此型號用料">${item.prodModel}</span></td>
-            </tr>`;
+            const dateKey = item.onlineDate || "未定日期";
+            if(!groupedData[dateKey]) groupedData[dateKey] = [];
+            groupedData[dateKey].push(item);
         });
-        html += `</tbody></table>`;
+
+        // 產生結構化的 div 取代傳統 table，以利手機版排版
+        let html = '<div class="schedule-list">';
+        html += `<div class="sl-header desktop-only" style="display:flex; font-weight:bold; background:#f8f9fa; padding:12px; border:1px solid #e0e0e0; border-bottom:none;">
+                    <div style="flex:1;">上線日</div>
+                    <div style="flex:1.5;">製令單號</div>
+                    <div style="flex:1.5;">產品型號</div>
+                 </div>`;
+
+        Object.keys(groupedData).sort().forEach(date => {
+            html += `<div class="sl-group">`;
+            html += `<div class="sl-date">${date}</div>`;
+            html += `<div class="sl-items">`;
+            groupedData[date].forEach(item => {
+                html += `<div class="sl-row">
+                    <div class="sl-cell sl-order"><span class="clickable-link" onclick="showBarcode('${item.orderNo}')" title="點擊顯示條碼">${item.orderNo}</span></div>
+                    <div class="sl-cell sl-model"><span class="clickable-link" onclick="jumpToBOM('${item.prodModel}')" title="點擊查詢此型號用料">${item.prodModel}</span></div>
+                </div>`;
+            });
+            html += `</div></div>`;
+        });
+        html += '</div>';
+        
         resultArea.innerHTML = html;
     }
 
@@ -746,7 +811,6 @@
         document.getElementById('barcodeTitle').innerText = orderNo;
         document.getElementById('barcodeOverlay').style.display = 'flex';
         
-        // 呼叫 JsBarcode 渲染條碼
         JsBarcode("#barcodeSvg", orderNo, {
             format: "CODE128",
             width: 2.5,
@@ -764,13 +828,9 @@
 
     function jumpToBOM(prodModel) {
         if(!prodModel) return;
-        // 1. 切換到 BOM 頁面
         toggleView('BOM');
-        // 2. 清空既有搜尋狀態
         clearBOMSearch();
-        // 3. 將型號填入搜尋框
         document.getElementById('inputSearch').value = prodModel;
-        // 4. 自動觸發 BOM 查詢
         runFuzzyQuery();
     }
 </script>
