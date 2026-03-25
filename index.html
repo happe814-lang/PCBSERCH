@@ -111,10 +111,34 @@
         .sl-group { display: flex; border: 1px solid #e0e0e0; border-top: none; }
         .sl-group:first-of-type { border-top: 1px solid #e0e0e0; }
         .sl-date { flex: 1; padding: 12px; font-weight: bold; border-right: 1px solid #e0e0e0; display: flex; align-items: center; }
-        .sl-items { flex: 3; display: flex; flex-direction: column; }
+        .sl-items { flex: 4; display: flex; flex-direction: column; }
         .sl-row { display: flex; padding: 12px; border-bottom: 1px dashed #eee; }
         .sl-row:last-child { border-bottom: none; }
-        .sl-cell { flex: 1; }
+        .sl-cell { flex: 1.5; }
+        .sl-cell.line-col { flex: 0.8; display: flex; align-items: center; justify-content: center; } /* 電腦版線別欄位較窄 */
+
+        /* 線別顏色設定 */
+        .line-l1 { background-color: #3498db !important; }
+        .line-l2 { background-color: #9b59b6 !important; }
+        .line-other { background-color: #7f8c8d !important; }
+
+        /* 電腦版線別標籤 */
+        .line-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 4px;
+            font-size: 13px; font-weight: bold; color: white; text-align: center;
+        }
+
+        /* 行動版專用線別標籤 (預設隱藏) */
+        .line-badge-mobile {
+            position: absolute; top: 0; left: 0;
+            padding: 2px 6px; font-size: 11px; font-weight: bold; color: white;
+            border-radius: 0 0 6px 0; z-index: 2;
+        }
+
+        /* 顯示切換控制 */
+        @media screen and (min-width: 601px) {
+            .mobile-only { display: none !important; }
+        }
 
         /* ----- 手機版螢幕適應設定 ----- */
         @media screen and (max-width: 600px) {
@@ -139,21 +163,21 @@
             .prefix-td { border-bottom: 1px dashed #e0e0e0; padding-bottom: 8px; margin-bottom: 5px; }
             .product-parent-title { font-size: clamp(10px, 4vw, 16px); }
 
-            /* 手機版排程表專屬樣式 (大框、左上角日期、同行雙外框) */
+            /* 手機版排程表專屬樣式 (大框、左上角日期、同行雙外框、獨立標籤定位) */
             .desktop-only { display: none !important; }
             .schedule-list { margin-top: 10px; }
             .sl-group { 
                 display: block; 
-                border: 2px solid #aab7c4 !important; /* 大外框 */
+                border: 2px solid #aab7c4 !important; 
                 border-radius: 8px; 
                 margin-bottom: 18px; 
                 position: relative; 
-                padding: 40px 10px 12px 10px; /* 頂部留空間給絕對定位的日期 */
+                padding: 40px 10px 12px 10px; 
                 background: #fff;
             }
             .sl-date { 
                 position: absolute; 
-                top: 0; left: 0; /* 日期只顯示一個且在左上角 */
+                top: 0; left: 0; 
                 background: #e67e22; 
                 color: #fff; 
                 padding: 5px 12px; 
@@ -165,7 +189,7 @@
             .sl-items { display: block; }
             .sl-row { 
                 display: flex; 
-                gap: 10px; /* 製令與型號同一行並保持間距 */
+                gap: 10px; 
                 padding: 0; 
                 margin-bottom: 10px; 
                 border: none;
@@ -173,7 +197,7 @@
             .sl-row:last-child { margin-bottom: 0; }
             .sl-cell { 
                 flex: 1; 
-                border: 1px solid #ced4da; /* 各自加上外框 */
+                border: 1px solid #ced4da; 
                 border-radius: 6px; 
                 padding: 10px 5px; 
                 text-align: center; 
@@ -182,9 +206,13 @@
                 align-items: center;
                 justify-content: center;
                 overflow: hidden; 
+                position: relative; /* 為了讓 mobile-only 的線別標籤可以絕對定位在左上角 */
+            }
+            .sl-cell.order-col {
+                padding-top: 20px; /* 特地把製令單號往下推，閃避左上角的線別標籤 */
             }
             .sl-cell .clickable-link {
-                font-size: clamp(11px, 3.5vw, 15px); /* 過長縮小字體 */
+                font-size: clamp(11px, 3.5vw, 15px); 
                 word-break: break-all;
                 display: block;
                 width: 100%;
@@ -340,13 +368,15 @@
                     }
                 }
 
-                if (cols.length >= 11) {
-                    const orderNo = cols[8] ? cols[8].replace(/"/g, '').trim() : '';
-                    const prodModel = cols[9] ? cols[9].replace(/"/g, '').trim() : '';
-                    const onlineDate = cols[10] ? cols[10].replace(/"/g, '').trim() : '';
+                // 抓取 I(8), J(9), K(10), L(11) 欄 (線別、製令單號、產品型號、上線日)
+                if (cols.length >= 9) { // 確保有讀取到排程區段
+                    const line = cols[8] ? cols[8].replace(/"/g, '').trim() : '';
+                    const orderNo = cols[9] ? cols[9].replace(/"/g, '').trim() : '';
+                    const prodModel = cols[10] ? cols[10].replace(/"/g, '').trim() : '';
+                    const onlineDate = cols[11] ? cols[11].replace(/"/g, '').trim() : '';
                     
-                    if (orderNo || prodModel || onlineDate) {
-                        scheduleData.push({ orderNo, prodModel, onlineDate });
+                    if (line || orderNo || prodModel || onlineDate) {
+                        scheduleData.push({ line, orderNo, prodModel, onlineDate });
                     }
                 }
             });
@@ -426,14 +456,13 @@
         const normalizedID = fullID.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
         let cleanQuery = queryStr.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
         
-        // 確保只有開頭是 1-9 的數字時才補 0，避免破壞純英文或完整料號
         if (cleanQuery.length > 0 && /^[1-9]/.test(cleanQuery)) {
             cleanQuery = "0" + cleanQuery;
         }
 
         if (normalizedID === cleanQuery) return "EXACT";
         if (normalizedID.startsWith(cleanQuery)) return "FUZZY";
-        if (normalizedID.includes(cleanQuery)) return "FUZZY"; // 支援局部包含
+        if (normalizedID.includes(cleanQuery)) return "FUZZY"; 
         return null;
     }
 
@@ -761,7 +790,7 @@
     }
 
     // ==========================================
-    // 排程系統與條碼互動邏輯 (群組化渲染)
+    // 排程系統與條碼互動邏輯 (包含線別色彩顯示)
     // ==========================================
     function renderSchedule() {
         const resultArea = document.getElementById('scheduleResultArea');
@@ -772,7 +801,6 @@
         
         const dataToRender = scheduleData.slice(1); 
         
-        // 依上線日進行群組化
         const groupedData = {};
         dataToRender.forEach(item => {
             if(!item.orderNo && !item.prodModel && !item.onlineDate) return; 
@@ -781,10 +809,11 @@
             groupedData[dateKey].push(item);
         });
 
-        // 產生結構化的 div 取代傳統 table，以利手機版排版
         let html = '<div class="schedule-list">';
+        // 電腦版表頭 (加入線別)
         html += `<div class="sl-header desktop-only" style="display:flex; font-weight:bold; background:#f8f9fa; padding:12px; border:1px solid #e0e0e0; border-bottom:none;">
                     <div style="flex:1;">上線日</div>
+                    <div style="flex:0.8; text-align:center;">線別</div>
                     <div style="flex:1.5;">製令單號</div>
                     <div style="flex:1.5;">產品型號</div>
                  </div>`;
@@ -794,9 +823,27 @@
             html += `<div class="sl-date">${date}</div>`;
             html += `<div class="sl-items">`;
             groupedData[date].forEach(item => {
+                
+                // 判斷線別並給予對應底色
+                let badgeClass = 'line-other';
+                const cleanLine = item.line ? item.line.toUpperCase() : '';
+                if (cleanLine === 'L1') badgeClass = 'line-l1';
+                else if (cleanLine === 'L2') badgeClass = 'line-l2';
+                
+                const lineText = item.line || '-';
+                
+                // 手機版的線別標籤 (如果有線別才渲染)
+                const badgeMobileHtml = item.line ? `<span class="line-badge-mobile mobile-only ${badgeClass}">${item.line}</span>` : '';
+
                 html += `<div class="sl-row">
-                    <div class="sl-cell sl-order"><span class="clickable-link" onclick="showBarcode('${item.orderNo}')" title="點擊顯示條碼">${item.orderNo}</span></div>
-                    <div class="sl-cell sl-model"><span class="clickable-link" onclick="jumpToBOM('${item.prodModel}')" title="點擊查詢此型號用料">${item.prodModel}</span></div>
+                    <div class="sl-cell line-col desktop-only"><span class="line-badge ${badgeClass}">${lineText}</span></div>
+                    <div class="sl-cell order-col">
+                        ${badgeMobileHtml}
+                        <span class="clickable-link" onclick="showBarcode('${item.orderNo}')" title="點擊顯示條碼">${item.orderNo}</span>
+                    </div>
+                    <div class="sl-cell model-col">
+                        <span class="clickable-link" onclick="jumpToBOM('${item.prodModel}')" title="點擊查詢此型號用料">${item.prodModel}</span>
+                    </div>
                 </div>`;
             });
             html += `</div></div>`;
